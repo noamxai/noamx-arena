@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  testResults   TestResult[]
+  prompts       Prompt[]
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// AI Model related models
+model AIModel {
+  id           String       @id @default(cuid())
+  name         String
+  provider     String
+  description  String
+  capabilities String
+  maxTokens    Int?
+  apiType      String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  testResults  TestResult[]
+}
+
+model TestResult {
+  id            String   @id @default(cuid())
+  userId        String
+  modelId       String
+  prompt        String
+  response      String
+  processingTime Int?
+  tokensUsed    Int?
+  temperature   Float?
+  maxTokens     Int?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model         AIModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+}
+
+// Prompt templates
+model Prompt {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String
+  template    String
+  variables   String
+  isPublic    Boolean  @default(false)
+  rating      Float?
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Comparison data
+model Comparison {
+  id          String   @id @default(cuid())
+  userId      String?
+  prompt      String
+  modelIds    String
+  results     String
+  createdAt   DateTime @default(now())
+}
